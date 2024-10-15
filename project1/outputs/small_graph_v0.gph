@@ -1,0 +1,5 @@
+age,portembarked
+age,fare
+portembarked,fare
+fare,numparentschildren
+numparentschildren,age
