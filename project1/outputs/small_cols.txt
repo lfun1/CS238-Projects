@@ -1,0 +1,8 @@
+age
+portembarked
+fare
+numparentschildren
+passengerclass
+sex
+numsiblings
+survived

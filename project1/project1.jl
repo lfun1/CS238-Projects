@@ -1,5 +1,7 @@
 using Graphs
 using Printf
+using CSV
+using DataFrames
 
 """
     write_gph(dag::DiGraph, idx2names, filename)
@@ -23,6 +25,21 @@ function compute(infile, outfile)
 
 end
 
+"""
+Read in data CSV file into DataFrame
+"""
+function read_data(datafile, outfile)
+    # Read in CSV data
+    df = DataFrame(CSV.File(datafile))
+    
+    # Write column names to outfile
+    column_names = names(df)
+    open(outfile, "w") do file
+        write(file, join(column_names, "\n"))
+    end
+    return df
+end
+
 if length(ARGS) != 2
     error("usage: julia project1.jl <infile>.csv <outfile>.gph")
 end
@@ -30,4 +47,5 @@ end
 inputfilename = ARGS[1]
 outputfilename = ARGS[2]
 
-compute(inputfilename, outputfilename)
+# compute(inputfilename, outputfilename)
+read_data(inputfilename, outputfilename)
