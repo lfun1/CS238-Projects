@@ -1,3 +1,9 @@
+"""
+Practice with Julia Interface
+Lisa Fung
+Last updated: Thursday 10/18/2024
+"""
+
 using Graphs
 using Printf
 using CSV
@@ -6,6 +12,7 @@ using DataFrames
 # using GraphPlot
 # using Plots
 using TikzGraphs
+using TikzPictures
 
 """
     write_gph(dag::DiGraph, idx2names, filename)
@@ -45,6 +52,7 @@ Input:
 Output:
     g : graph with df columns as nodes, with no edges
     idx2names : Dict mapping node indices to column names
+    p : plot of graph
 """
 function graph_init(nodes)
     g = DiGraph()
@@ -59,7 +67,7 @@ function graph_init(nodes)
     # Dictionary mapping node index to column name
     idx2names = Dict(i => nodes[i] for i in eachindex(nodes))
 
-    return g, idx2names
+    return g, idx2names, p
 end
 
 """
@@ -166,11 +174,13 @@ end
 # end
 
 inputfilename = "project1/data/small.csv"
-outputfilename = "project1/outputs/small_graph_v0.gph"
+# outputfilename = "project1/outputs/small_graph_v0.gph"
+outputgraphfile = "project1/outputs/small_graph_v0.tex"
 
 df = read_data(inputfilename)
 nodes = names(df)
-g, idx2names = graph_init(nodes)
+g, idx2names, p = graph_init(nodes)
 # Save graph
+save(PDF(outputgraphfile), p)
 # write_gph(g, idx2names, outputfilename)
 
