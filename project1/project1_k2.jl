@@ -15,6 +15,8 @@ using SpecialFunctions  # for loggamma
 using GraphPlot         # for plotting graphs
 using Compose, Cairo, Fontconfig    # for saving graphs
 
+using Random            # for random node orderings in K2 Search
+
 """
 Part 1: Read in dataset D and extract statistics (counts) from D.
 """
@@ -239,7 +241,7 @@ end
 """
 Main code
 """
-dataset = "small"
+dataset = "large"
 
 inputfilename = string("project1/data/", dataset, ".csv")
 D, vars = read_data(inputfilename)
@@ -248,32 +250,59 @@ G_baseline = SimpleDiGraph(length(vars))    # Baseline graph with no edges
 println("Baseline Bayes Score: ", bayesian_score(D, vars, G_baseline))
 
 default_order = [i for i in 1:length(vars)]     # Default ordering
+# Seeded random orderings
+random_orders = unique([randperm(Xoshiro(i+137), length(vars)) for i in 1:5])
 
 """
-Test output of different max_parents with K2 Search
+Test output of different max_parents with K2 Search.
+1. Default ordering of nodes in dataset
+2. Random permutations of nodes for ordering
+    a. Test 5 random permutations, max_parents (1:3) for small dataset, record and compare performance
 """
 
-function K2_eval()
+function K2_eval(order_list, do_plot=false)
     K2_graphs = []
     K2_score_best = -Inf
     K2_G_best = G_baseline
 
-    for max_parents in 1:3
-        G_curr = fit(K2Search(default_order), vars, D, max_parents)
-        score_curr = bayesian_score(D, vars, G_curr)
-        push!(K2_graphs, G_curr)
-        println("Bayes Score (max_parents = ", max_parents, "): ", score_curr)
-        if score_curr > K2_score_best
-            K2_score_best = score_curr
-            K2_G_best = G_curr
-        end
-        plot = gplot(G_curr, layout=circular_layout, nodelabel=node_names)
-        draw(PDF(string("project1/outputs_", dataset, "/K2_plot_G_order_default_max_parent_", max_parents, ".pdf"), 16cm, 16cm), plot)
-    end
+    # for (i, order) in enumerate(order_list)
+    order = order_list
+    i = 1
+        for max_parents in 5:5
+            println("Order: ", i, ", max_parents: ", max_parents)
+            @time begin
+                G_curr = fit(K2Search(order), vars, D, max_parents)
+            end
+            score_curr = bayesian_score(D, vars, G_curr)
+            push!(K2_graphs, G_curr)
+            println("Bayes Score (order: ", i, ", max_parents: ", max_parents, "): ", score_curr)
+            if score_curr > K2_score_best
+                K2_score_best = score_curr
+                K2_G_best = G_curr
+            end
 
-    return K2_G_best, K2_score_best
+            if do_plot
+                plot = gplot(G_curr, layout=circular_layout, nodelabel=node_names)
+                draw(PDF(string("project1/outputs_", dataset, "/K2_plot_G_order_random", i, "_max_parent_", max_parents, ".pdf"), 16cm, 16cm), plot)
+                write_gph(G_curr, node_names, string("project1/outputs_", dataset, "/K2_G_order_random_max_parent_", max_parents, ".gph"))
+            end
+        end
+        println()
+    # end
+
+    return K2_graphs, K2_G_best, K2_score_best
 end
 
-K2_G_best, K2_score_best = K2_eval()
+K2_graphs, K2_G_best, K2_score_best = K2_eval(random_orders[1], true)
 
-write_gph(K2_G_best, node_names, string("project1/outputs_", dataset, "/K2_best_G_order_default.gph"))
+# Plot and write best graph
+plot = gplot(K2_G_best, layout=circular_layout, nodelabel=node_names)
+# Save normal graph
+# draw(PDF(string("project1/outputs_", dataset, "/K2_best_plot_G_order_random.pdf"), 16cm, 16cm), plot)
+# write_gph(K2_G_best, node_names, string("project1/outputs_", dataset, "/K2_best_G_order_random.gph"))
+# println("Best Bayesian Score from K2 Random: ", K2_score_best)
+
+# Save large graph
+# draw(PDF(string("project1/outputs_", dataset, "/K2_best_plot_G_order_default.pdf"), 16cm, 16cm), plot)
+# write_gph(K2_G_best, node_names, string("project1/outputs_", dataset, "/K2_best_G_order_default.gph"))
+# println("Best Bayesian Score from K2 Random: ", K2_score_best)
