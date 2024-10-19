@@ -116,8 +116,57 @@ function statistics(D, vars, G)
             M[i][j, k] += 1.0
         end
     end
+    return M
 end
 
+"""
+Part 2: Compute Bayesian Score for a Graphs
+"""
+
+"""
+Compute uniform prior for pseudocounts (alpha's).
+"""
+function prior(D, vars, G)
+    n = length(vars)
+    r = [vars[i].r for i in 1:n]
+    q = [prod([r[parent] for parent in inneighbors(G, i)]) for i in 1:n]
+    return [ones(q[i], r[i]) for i in 1:n]
+end
+
+"""
+Compute Bayesian score component for each variable
+"""
+function bayesian_score_component(M_i, alpha_i)
+    # Sum over all parental instantiations q[i]
+    p = sum(loggamma.( sum(alpha_i, dims=2) ))
+    p -= sum(loggamma.( sum(alpha_i, dims=2) + sum(M_i, dims=2) ))
+
+    # Sum over all elements
+    p += sum(loggamma.(alpha_i + M_i))
+    p -= sum(loggamma.(alpha_i))    # Equals 0 due to uniform prior, loggamma(1) = 0
+
+    return p
+end
+
+"""
+Compute Bayesian Score given graph, data, vars
+Inputs:
+    D : n x m matrix of dataset.
+        n = number of variables
+        m = number of observations (data points)
+    vars : array of length n with variables
+        Vector{Variable}
+    G : directed graph with nodes and edges
+
+Output:
+    Returns Bayesian score (log version)
+"""
+function bayesian_score(D, vars, G)
+    n = length(vars)
+    M = statistics(D, vars, G)
+    alpha = prior(D, vars, G)
+    return sum([bayesian_score_component(M[i], alpha[i]) for i in 1:n])
+end
 
 
 """
@@ -128,4 +177,5 @@ D, vars = read_data(inputfilename)
 G = create_graph()
 M = statistics(D, vars, G)
 
-println(loggamma.(5))
+alpha = prior(D, vars, G)
+bayesian_score(D, vars, G)  # Correct!
