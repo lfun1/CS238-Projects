@@ -249,14 +249,14 @@ println("Example Bayes Score: ", bayesian_score(D, vars, G))  # Correct!
 K2 = K2Search([i for i in 1:length(vars)])  # Default ordering
 
 """
-Test output of different max_parents
+Test output of different max_parents with K2 Search
 """
 K2_graphs = []
 for max_parents in 1:3
     push!(K2_graphs, fit(K2, vars, D, max_parents))
     println("Bayes Score (max_parents = ", max_parents, "): ", bayesian_score(D, vars, K2_graphs[end]))
     plot = gplot(K2_graphs[end], layout=circular_layout, nodelabel=node_names)
-    draw(PDF(string("project1/outputs/plot_G_max_parent_", max_parents, ".pdf"), 16cm, 16cm), plot)
+    draw(PDF(string("project1/outputs_v0/plot_G_max_parent_", max_parents, ".pdf"), 16cm, 16cm), plot)
 end
 
 # Earlier test code
