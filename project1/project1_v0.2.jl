@@ -2,17 +2,17 @@
 Practice on Example data
 Lisa Fung
 Last updated: Friday 10/18/2024
-
-Next step: Add Linear Indices conversion in statistics function
 """
 
 using Graphs
 using Printf
 using CSV
 using DataFrames
+using LinearAlgebra     # for dot product
+using SpecialFunctions  # for loggamma
 
 """
-Purpose: Read in dataset D and extract statistics (counts) from D.
+Part 1: Read in dataset D and extract statistics (counts) from D.
 """
 
 # Variable structure for all variables in Bayesian network
@@ -61,6 +61,23 @@ function create_graph()
 end
 
 """
+Returns linear index given subscript index.
+Inputs:
+    siz : size of multi-dimensional array
+    subscript : subscript/Cartesian coordinates of element
+Output:
+    corresponding integer linear index
+"""
+function sub2ind(siz, subscript)
+    # Given siz (n1, n2, ..., nt) and subscript (x1, x2, ..., xt)
+    # Position in serialized array is (x1 + x2*n1 + x3*n1*n2 + ... + xt*n1*...*n{t-1})
+    mult = [1; cumprod(siz[1:end-1])]     # [1, n1, n1*n2, ..., n1*...*n{t-1}]
+    
+    # Must convert subscript to be 0-indexed, dot product, then convert to 1-indexed
+    return dot(mult, subscript .- 1) + 1
+end
+
+"""
 Extract statistics (counts) from dataset.
 Inputs:
     D : n x m matrix of dataset.
@@ -87,23 +104,21 @@ function statistics(D, vars, G)
     # linear_indices = LinearIndices()
     # println(linear_indices)
 
-    # for o in eachcol(D)     # Iterate thru each observation
-        o = eachcol(D)[1]
+    for o in eachcol(D)     # Iterate thru each observation
         for i in 1:n        # Iterate thru each variable
             k = o[i]        # Assignment to vars[i]
             parents = inneighbors(G, i)
-            println(parents)
-            j = 1           # Default q[i] is 1
+            j = 1           # Parental instantiation, default q[i] is 1
             if !isempty(parents)
-                # Get linear index of parental assignments, o[parents]
-                
-                # j = 
+                # Get linear index of parental assignments, o[parents], from subscript
+                j = sub2ind(r[parents], o[parents])
             end
+            M[i][j, k] += 1.0
         end
-    # end
-
-    
+    end
 end
+
+
 
 """
 Main code
@@ -111,4 +126,6 @@ Main code
 inputfilename = "project1/example/example.csv"
 D, vars = read_data(inputfilename)
 G = create_graph()
-statistics(D, vars, G)
+M = statistics(D, vars, G)
+
+println(loggamma.(5))
