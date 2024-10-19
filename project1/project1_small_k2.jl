@@ -1,5 +1,5 @@
 """
-Practice on Example data
+K2 Search: Small Data
 Lisa Fung
 Last updated: Saturday 10/19/2024
 """
@@ -46,22 +46,6 @@ function read_data(datafile)
     D = transpose(Matrix(df))   # Dataset
 
     return D, vars
-end
-
-"""
-Create example graph.
-Returns:
-    g : example graph
-"""
-function create_graph()
-    g = SimpleDiGraph(6)
-    add_edge!(g, 1, 2)
-    add_edge!(g, 3, 4)
-    add_edge!(g, 5, 6)
-    add_edge!(g, 1, 4)
-    add_edge!(g, 5, 4)
-
-    return g
 end
 
 """
@@ -236,36 +220,41 @@ end
 
 
 
-
 """
 Main code
 """
-inputfilename = "project1/example/example.csv"
+inputfilename = "project1/data/small.csv"
 D, vars = read_data(inputfilename)
 node_names = [var.name for var in vars]
-G = create_graph()
-println("Example Bayes Score: ", bayesian_score(D, vars, G))  # Correct!
+G_baseline = SimpleDiGraph(length(vars))    # Baseline graph with no edges
+println("Baseline Bayes Score: ", bayesian_score(D, vars, G_baseline))
 
 default_order = [i for i in 1:length(vars)]     # Default ordering
-parent_child_order = [1, 3, 5, 2, 4, 6]
+
 """
 Test output of different max_parents with K2 Search
 """
-K2_graphs = []
-for max_parents in 1:3
-    push!(K2_graphs, fit(K2Search(parent_child_order), vars, D, max_parents))
-    println("Bayes Score (max_parents = ", max_parents, "): ", bayesian_score(D, vars, K2_graphs[end]))
-    plot = gplot(K2_graphs[end], layout=circular_layout, nodelabel=node_names)
-    draw(PDF(string("project1/outputs_v0/plot_G_order_parent_child_max_parent_", max_parents, ".pdf"), 16cm, 16cm), plot)
+
+function K2_eval()
+    K2_graphs = []
+    K2_score_best = -Inf
+    K2_G_best = G_baseline
+
+    for max_parents in 1:3
+        G_curr = fit(K2Search(default_order), vars, D, max_parents)
+        score_curr = bayesian_score(D, vars, G_curr)
+        push!(K2_graphs, G_curr)
+        println("Bayes Score (max_parents = ", max_parents, "): ", score_curr)
+        if score_curr > K2_score_best
+            K2_score_best = score_curr
+            K2_G_best = G_curr
+        end
+        plot = gplot(G_curr, layout=circular_layout, nodelabel=node_names)
+        draw(PDF(string("project1/outputs_small/plot_G_order_default_max_parent_", max_parents, ".pdf"), 16cm, 16cm), plot)
+    end
+
+    return K2_G_best, K2_score_best
 end
 
-# Earlier test code
+K2_G_best, K2_score_best = K2_eval()
 
-# G_K2 = fit(K2, vars, D, 1)
-# println("Example Bayes Score from K2: ", bayesian_score(D, vars, G_K2))
-
-# plot_G = gplot(G, layout=circular_layout, nodelabel=node_names)
-# plot_K2 = gplot(G_K2, layout=circular_layout, nodelabel=node_names)
-
-# draw(PDF("project1/outputs/plot_G_v1.pdf", 16cm, 16cm), plot_G)
-# draw(PDF("project1/outputs/plot_K2_v1.pdf", 16cm, 16cm), plot_K2)
