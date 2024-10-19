@@ -218,12 +218,30 @@ function fit(method::K2Search, vars, D, max_parents=2)
     return G
 end
 
+"""
+Part 4: Save graph
+"""
+
+"""
+    write_gph(dag::DiGraph, idx2names, filename)
+
+Takes a DiGraph, a Dict of index to names and a output filename to write the graph in `gph` format.
+"""
+function write_gph(dag::DiGraph, idx2names, filename)
+    open(filename, "w") do io
+        for edge in edges(dag)
+            @printf(io, "%s,%s\n", idx2names[src(edge)], idx2names[dst(edge)])
+        end
+    end
+end
 
 
 """
 Main code
 """
-inputfilename = "project1/data/small.csv"
+dataset = "small"
+
+inputfilename = string("project1/data/", dataset, ".csv")
 D, vars = read_data(inputfilename)
 node_names = [var.name for var in vars]
 G_baseline = SimpleDiGraph(length(vars))    # Baseline graph with no edges
@@ -250,7 +268,7 @@ function K2_eval()
             K2_G_best = G_curr
         end
         plot = gplot(G_curr, layout=circular_layout, nodelabel=node_names)
-        draw(PDF(string("project1/outputs_small/plot_G_order_default_max_parent_", max_parents, ".pdf"), 16cm, 16cm), plot)
+        draw(PDF(string("project1/outputs_", dataset, "/K2_plot_G_order_default_max_parent_", max_parents, ".pdf"), 16cm, 16cm), plot)
     end
 
     return K2_G_best, K2_score_best
@@ -258,3 +276,4 @@ end
 
 K2_G_best, K2_score_best = K2_eval()
 
+write_gph(K2_G_best, node_names, string("project1/outputs_", dataset, "/K2_best_G_order_default.gph"))
