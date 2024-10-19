@@ -8,8 +8,12 @@ using Graphs
 using Printf
 using CSV
 using DataFrames
+
 using LinearAlgebra     # for dot product
 using SpecialFunctions  # for loggamma
+
+using GraphPlot         # for plotting graphs
+using Compose, Cairo, Fontconfig    # for saving graphs
 
 """
 Part 1: Read in dataset D and extract statistics (counts) from D.
@@ -170,12 +174,98 @@ end
 
 
 """
+Part 3: K2 Search with limited number of parents (2)
+"""
+
+"""
+Perform K2 Search on available graphs with prespecified ordering.
+K2 Search only adds edges from earlier parent nodes to later child nodes in ordering
+"""
+struct K2Search
+    order::Vector{Int}  # Ordering of nodes
+end
+
+"""
+Fit function for K2 Search.
+Inputs:
+    method::K2Search : method structure with ordering of nodes
+    vars::Vector{Variable} : array of length n with variables
+    D : n x m matrix of dataset.
+        n = number of variables
+        m = number of observations (data points)
+    max_parents : maximum number of parents any node can have
+
+Output:
+    G : best graph by Bayesian Score given K2 Search ordering
+"""
+function fit(method::K2Search, vars, D, max_parents=2)
+    # Initialize graph with only nodes, no edges
+    G = SimpleDiGraph(length(vars))
+
+    score = bayesian_score(D, vars, G)
+    # Iterate through all nodes in K2Search ordering to add parents
+    for (node_idx, i) in enumerate(method.order[2:end])
+        for _ in 1:max_parents
+            # Determine which node as parent j is best
+            score_best, parent_best = -Inf, 0
+            for j in method.order[1:node_idx]
+                if !has_edge(G, j, i)
+                    add_edge!(G, j, i)
+                    score_j = bayesian_score(D, vars, G)
+                    if score_j > score_best
+                        score_best = score_j
+                        parent_best = j
+                    end
+                    rem_edge!(G, j, i)
+                end
+            end
+
+            # Add edge from best parent if Bayesian Score improves
+            if score_best > score
+                score = score_best
+                add_edge!(G, parent_best, i)
+            else
+                # No improvement by parents, move onto next node in ordering
+                break
+            end
+        end
+    end
+
+    return G
+end
+
+
+
+
+"""
 Main code
 """
 inputfilename = "project1/example/example.csv"
 D, vars = read_data(inputfilename)
+node_names = [var.name for var in vars]
 G = create_graph()
-M = statistics(D, vars, G)
+println("Example Bayes Score: ", bayesian_score(D, vars, G))  # Correct!
 
-alpha = prior(D, vars, G)
-bayesian_score(D, vars, G)  # Correct!
+K2 = K2Search([i for i in 1:length(vars)])  # Default ordering
+
+"""
+Test output of different max_parents
+"""
+K2_graphs = []
+for max_parents in 1:3
+    push!(K2_graphs, fit(K2, vars, D, max_parents))
+    println("Bayes Score (max_parents = ", max_parents, "): ", bayesian_score(D, vars, K2_graphs[end]))
+    plot = gplot(K2_graphs[end], layout=circular_layout, nodelabel=node_names)
+    draw(PDF(string("project1/outputs/plot_G_max_parent_", max_parents, ".pdf"), 16cm, 16cm), plot)
+end
+
+# Earlier test code
+
+# G_K2 = fit(K2, vars, D, 1)
+# println("Example Bayes Score from K2: ", bayesian_score(D, vars, G_K2))
+
+# plot_G = gplot(G, layout=circular_layout, nodelabel=node_names)
+# plot_K2 = gplot(G_K2, layout=circular_layout, nodelabel=node_names)
+
+# draw(PDF("project1/outputs/plot_G_v1.pdf", 16cm, 16cm), plot_G)
+# draw(PDF("project1/outputs/plot_K2_v1.pdf", 16cm, 16cm), plot_K2)
