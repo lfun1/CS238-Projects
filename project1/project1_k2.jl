@@ -257,7 +257,8 @@ random_orders = unique([randperm(Xoshiro(i+137), length(vars)) for i in 1:5])
 Test output of different max_parents with K2 Search.
 1. Default ordering of nodes in dataset
 2. Random permutations of nodes for ordering
-    a. Test 5 random permutations, max_parents (1:3) for small dataset, record and compare performance
+    a. Test 5 random permutations, max_parents (1:3) for small/medium dataset, record and compare performance
+    b. Increase max_parents until level out performance for large dataset
 """
 
 function K2_eval(order_list, do_plot=false)
@@ -267,8 +268,8 @@ function K2_eval(order_list, do_plot=false)
 
     # for (i, order) in enumerate(order_list)
     order = order_list
-    i = 1
-        for max_parents in 5:5
+    i = 2
+        for max_parents in 4:4
             println("Order: ", i, ", max_parents: ", max_parents)
             @time begin
                 G_curr = fit(K2Search(order), vars, D, max_parents)
@@ -293,16 +294,11 @@ function K2_eval(order_list, do_plot=false)
     return K2_graphs, K2_G_best, K2_score_best
 end
 
-K2_graphs, K2_G_best, K2_score_best = K2_eval(random_orders[1], true)
+# K2_graphs, K2_G_best, K2_score_best = K2_eval(random_orders[2], true)
 
 # Plot and write best graph
 plot = gplot(K2_G_best, layout=circular_layout, nodelabel=node_names)
-# Save normal graph
+
 # draw(PDF(string("project1/outputs_", dataset, "/K2_best_plot_G_order_random.pdf"), 16cm, 16cm), plot)
 # write_gph(K2_G_best, node_names, string("project1/outputs_", dataset, "/K2_best_G_order_random.gph"))
-# println("Best Bayesian Score from K2 Random: ", K2_score_best)
-
-# Save large graph
-# draw(PDF(string("project1/outputs_", dataset, "/K2_best_plot_G_order_default.pdf"), 16cm, 16cm), plot)
-# write_gph(K2_G_best, node_names, string("project1/outputs_", dataset, "/K2_best_G_order_default.gph"))
 # println("Best Bayesian Score from K2 Random: ", K2_score_best)
